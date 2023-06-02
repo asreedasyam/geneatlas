@@ -1,5 +1,5 @@
 
-source("geneFunctionDescription_utils.R")
+source("https://github.com/asreedasyam/geneatlas/blob/main/geneFunctionDescription_utils.R")
 
 ## -- download annotation files for Gene Atlas species from Phytozome (https://phytozome-next.jgi.doe.gov/) to the wrk.dir
 wrk.dir = "/Users/ga.wrk/Downloads"

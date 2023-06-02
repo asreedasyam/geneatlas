@@ -16,8 +16,9 @@ RNA-seq data is available at NCBI SRA.
 
 
 #### Scripts used
-- [Categorization of gene function descriptions](https://github.com/asreedasyam/geneatlas/blob/main/geneFunctionDescription_utils.R)
-- 
+- [Utility functions for categorization of gene function descriptions](https://github.com/asreedasyam/geneatlas/blob/main/geneFunctionDescription_utils.R)
+- [Categorize function descriptions of all Gene Atlas species] (https://github.com/asreedasyam/geneatlas/blob/main/categorize_geneFunctionDescription.R)
+
 
 
 

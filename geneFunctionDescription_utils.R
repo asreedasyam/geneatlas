@@ -8,6 +8,41 @@ library(tibble)
 library(qdapRegex)
 
 
+
+#' Title make function Description column from Defline's columns in the Phytozome annotation_info.txt file 
+#'
+#' @param annot.file 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+add.functionDescription <- function(annot.file){
+  library(data.table)
+  library(dplyr)
+  
+  if(file.exists(annot.file)){
+    annot <- fread(annot.file)
+    setnames(annot, c("best_arabi_gene", "best_arabi_defline"), c("Best-hit-arabi-name", "arabi-defline"), skip_absent = TRUE)
+    annot.raw.cols <- c('#pacId','locusName','transcriptName','peptideName','Pfam','Panther','KOG','ec','KO','GO','Best-hit-arabi-name','arabi-symbol','arabi-defline','Best-hit-rice-name','rice-symbol','rice-defline')
+    annot.cols <- c("PacID","GeneID","TranscriptID","ProteinID","PFAM","Panther","KOG","EC","KO","GO","Arabidopsis_HitName","Arabidopsis_HitSymbol","Arabidopsis_Defline", "Rice_HitName","Rice_HitSymbol","Rice_Defline")
+    setnames(annot, old = annot.raw.cols, new = annot.cols, skip_absent = TRUE)
+    
+    def.cols <- grep("Defline", colnames(annot), value = T, ignore.case = T)
+    ord.cols <- c("Defline", "Arabidopsis_Defline", "Rice_Defline")
+    if(any(!def.cols %in% ord.cols))
+      stop("** Unknown Defline columns in annotation/defline files **")
+    def.cols <- def.cols[order(match(def.cols, ord.cols))]
+    
+    annot[, Description := paste2(sapply(def.cols, function(x) get(x)), collapse = "; "), by = "GeneID"]
+    
+    annot <- annot %>% dplyr::rowwise() %>% dplyr::mutate(Description = paste2(sapply(def.cols, function(x) get(x)), collapse = "; ")) %>% data.frame
+    annot <- annot[!duplicated(annot$GeneID),]
+    return(annot)
+  } else
+    stop("** annot.file does not exist **")
+}
+
 #' Title generate lexicon for gene function descriptions
 #'
 #' @param annotation.files 
@@ -26,7 +61,8 @@ generate.lexicon_for_geneDescriptions <- function(annotation.files,
   
   ## get function descriptions or deflines 
   deflines <- unique(unlist(lapply(annotation.files, function(i) {
-    s <- data.table::fread(i)[[description.column]]
+    s <- add.functionDescription(i)[[description.column]]
+    ## s <- data.table::fread(i)[[description.column]]
     return(s)
     
   })))
@@ -136,10 +172,10 @@ generate.lexicon_for_geneDescriptions <- function(annotation.files,
   hash_valence_shifters_defl <- lexicon::hash_valence_shifters
   hash_valence_shifters_defl <- hash_valence_shifters_defl  %>% filter(!x %in% remove_valence_shifters) %>% data.table
   write.csv(hash_valence_shifters_defl, file = file.path(out.dir, 
-                                                         file = sprintf("hash_valence_shifters_defl_PolarityDT_%s.csv", file.suffix)))
+                                                         file = sprintf("valence_shifters_functionDescriptions_%s.csv", file.suffix)))
   
   write.csv(defl_words_filtered_df, file = file.path(out.dir,
-                                                     file = sprintf("hash_sentiment_functionDescription_words_PolarityDT_%s.csv",file.suffix)))
+                                                     file = sprintf("functionDescriptions_sentiment_PolarityDT_%s.csv",file.suffix)))
 }
 
 
@@ -167,8 +203,7 @@ categorize.functionDescriptions <- function(annotation.file,
                                             out.dir = ".",
                                             verbose = TRUE){
   
-  
-  fd <- fread(annotation.file)
+  fd <- add.functionDescription(annotation.file)
   if(any(!c("GeneID", description.column) %in% colnames(fd)))
     stop(sprintf("annotation.file must contain GeneID and %s columns", description.column))
   if(!file.exists(polarity.file))
